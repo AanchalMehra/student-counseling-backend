@@ -40,9 +40,11 @@ app.use('/api/admin', adminRoutes);
 // --- Production Static File Serving ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, 'client/build')));
+// This is the NEW code
+app.use(express.static(path.join(__dirname, '../student-counseling-frontend/build')));
+
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  res.sendFile(path.join(__dirname, '../student-counseling-frontend/build', 'index.html'));
 });
 
 // --- Server Startup ---
