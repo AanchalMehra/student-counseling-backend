@@ -1,29 +1,45 @@
 import StudentInfo from '../models/StudentInfo.js';
 import Allotment from '../models/Allotment.js';
 
+
 // @desc    Submit student information
 // @route   POST /api/students/submit
 // @access  Private
 const submitStudentInfo = (req, res) => {
-  const { personal, highSchool, intermediate, branchChoices } = req.body;
-  if (!personal || !highSchool || !intermediate || !branchChoices) {
+  // Destructure all the flat fields directly from the request body
+  const {
+    address,
+    phone,
+    highSchool,
+    intermediate,
+    branchChoice1,
+    branchChoice2
+  } = req.body;
+
+  // Basic check to ensure the main objects and fields are present
+  if (!address || !phone || !highSchool || !intermediate || !branchChoice1 || !branchChoice2) {
     return res.status(400).json({ message: 'Please fill out all sections of the form' });
   }
 
+  // Create the document using the flat structure that matches the schema
   StudentInfo.create({
     user: req.user.id,
-    personal,
+    address,
+    phone,
     highSchool,
     intermediate,
-    branchChoices,
+    branchChoice1,
+    branchChoice2,
   })
   .then(studentInfo => res.status(201).json(studentInfo))
-  .catch(err => res.status(400).json({ message: 'Invalid data submitted' }));
+  .catch(err => {
+    // This catch block is what's giving you the error
+    console.error("Mongoose validation error:", err); // Good to log the actual error
+    res.status(400).json({ message: 'Invalid data submitted' });
+  });
 };
 
-// @desc    Check student status
-// @route   GET /api/students/status
-// @access  Private
+
 const getStudentStatus = async (req, res) => {
   try {
     // 1. First, check if the student has submitted their information

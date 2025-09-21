@@ -13,11 +13,6 @@ import adminRoutes from './routes/adminRoutes.js';
 dotenv.config();
 connectDB();
 const app = express();
-
-// ===============================================================
-//               *** THIS IS THE CORRECTED SECTION ***
-// ===============================================================
-
 // --- CORS Configuration ---
 const corsOptions = {
   origin: [
