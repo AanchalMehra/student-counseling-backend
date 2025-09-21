@@ -53,33 +53,34 @@ const registerUser = async (req, res) => {
   }
 };
           
+// In controllers/authController.js
+
+// ... keep your imports and the registerUser function as they are ...
+
+// @desc    Login a user
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = (req, res) => {
-  // Get email and password from the request body
   const { email, password } = req.body;
 
-  // Find the user in the database by their email
   User.findOne({ email: email })
     .then(user => {
       if (user) {
-        // If the user exists, compare the submitted password with the hashed password in the database
         bcrypt.compare(password, user.password, (err, isMatch) => {
           if (isMatch) {
-            // If passwords match, send back user info and a new token
+            // If passwords match, send back user info including isAdmin status
             res.status(200).json({
               _id: user._id,
               name: user.name,
               email: user.email,
+              isAdmin: user.isAdmin, // <-- THIS IS THE FIX
               token: generateToken(user._id),
             });
           } else {
-            // If passwords do not match, send an error
             res.status(401).json({ message: 'Invalid credentials' });
           }
         });
       } else {
-        // If no user is found with that email, send an error
         res.status(401).json({ message: 'Invalid credentials' });
       }
     })
@@ -87,6 +88,8 @@ const loginUser = (req, res) => {
       res.status(500).json({ message: 'Server error' });
     });
 };
+
+
 
 // @desc    Get current user's data
 // @route   GET /api/auth/me
