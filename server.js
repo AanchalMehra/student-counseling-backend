@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-import cors from 'cors'; 
+import cors from 'cors';
 
 // Import our route files
 import authRoutes from './routes/authRoutes.js';
@@ -18,8 +18,9 @@ connectDB();
 const app = express();
 
 // --- CORS Setup ---
+// We now allow requests from BOTH your live frontend and your local machine
 app.use(cors({
-  origin: 'https://student-counseling-frontend.onrender.com', 
+  origin: ['https://student-counseling-frontend.onrender.com', 'http://localhost:3000'],
 }));
 
 // This line allows our server to accept JSON data in requests (like from forms)

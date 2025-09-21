@@ -1,30 +1,79 @@
 import StudentInfo from '../models/StudentInfo.js';
 import Allotment from '../models/Allotment.js';
-import User from '../models/User.js';
+import User from '../models/User.js';// controllers/adminController.js
+import mongoose from 'mongoose'; 
 
-// @desc    Get all students with their marks
-// @route   GET /api/admin/students
-// @access  Private/Admin
-const getAllStudents = (req, res) => {
-  StudentInfo.find({}).populate('user', 'name email')
-    .then(students => {
-      // Manually calculate total marks for sorting if needed
-      students.forEach(student => {
-        student.intermediate.total = 
-          (student.intermediate.physics || 0) + 
-          (student.intermediate.chemistry || 0) + 
-          (student.intermediate.maths || 0);
-      });
-      // Sort students in descending order of total marks
-      students.sort((a, b) => b.intermediate.total - a.intermediate.total);
-      res.status(200).json(students);
-    })
-    .catch(err => res.status(500).json({ message: 'Server Error' }));
+
+// Get all students with their marks and allotment status
+
+const getAllStudents = async (req, res) => {
+  try {
+    const students = await StudentInfo.aggregate([
+      // Stage 1: Populate user details (name, email)
+      {
+        $lookup: {
+          from: 'users', // the name of the User collection in MongoDB
+          localField: 'user',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      // Stage 2: Deconstruct the userDetails array to get an object
+      {
+        $unwind: '$userDetails',
+      },
+      // Stage 3: Populate allotment details
+      {
+        $lookup: {
+          from: 'allotments', // the name of the Allotment collection
+          localField: 'user',
+          foreignField: 'user',
+          as: 'allotmentDetails',
+        },
+      },
+      // Stage 4: Deconstruct allotmentDetails (if it exists)
+      {
+        $unwind: {
+          path: '$allotmentDetails',
+          preserveNullAndEmptyArrays: true, // Keep students even if they have no allotment
+        },
+      },
+      // Stage 5: Project the final shape of the data
+      {
+        $project: {
+          _id: 1, // StudentInfo ID
+          user: { // Nest user info
+            _id: '$userDetails._id',
+            name: '$userDetails.name',
+            email: '$userDetails.email',
+          },
+          intermediate: 1, // Keep intermediate marks
+          branchChoice1: 1,
+          branchChoice2: 1,
+          allotment: '$allotmentDetails', // Nest the full allotment document
+        },
+      },
+    ]);
+
+    // Manually calculate total marks for sorting
+    students.forEach(student => {
+      student.intermediate.total =
+        (student.intermediate.physics || 0) +
+        (student.intermediate.chemistry || 0) +
+        (student.intermediate.maths || 0);
+    });
+
+    // Sort students in descending order of total marks
+    students.sort((a, b) => b.intermediate.total - a.intermediate.total);
+
+    res.status(200).json(students);
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };
-
-// @desc    Allocate a seat to a student
-// @route   POST /api/admin/allocate
-// @access  Private/Admin
+    
+//  Allocate a seat to a student
 const allocateSeat = (req, res) => {
   const { userId, allocatedBranch } = req.body;
   if (!userId || !allocatedBranch) {
