@@ -24,17 +24,32 @@ const submitStudentInfo = (req, res) => {
 // @desc    Check student status
 // @route   GET /api/students/status
 // @access  Private
-const getStudentStatus = (req, res) => {
-  Allotment.findOne({ user: req.user.id })
-    .then(allotment => {
-      if (allotment) {
-        res.status(200).json(allotment);
-      } else {
-        res.status(200).json({ message: 'Seat has not been allocated yet.' });
-      }
-    })
-    .catch(err => res.status(500).json({ message: 'Server error' }));
+const getStudentStatus = async (req, res) => {
+  try {
+    // 1. First, check if the student has submitted their information
+    const studentInfo = await StudentInfo.findOne({ user: req.user.id });
+
+    // If no info is found, they need to see the form
+    if (!studentInfo) {
+      return res.status(200).json({ message: 'Form not yet submitted' });
+    }
+
+    // 2. If info exists, THEN check for an allotment
+    const allotment = await Allotment.findOne({ user: req.user.id });
+
+    if (allotment) {
+      // If an allotment exists, send it
+      return res.status(200).json(allotment);
+    } else {
+      // If info exists but no allotment, they are pending allocation
+      return res.status(200).json({ message: 'Seat has not been allocated yet.' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 };
+
+
 
 // @desc    Accept a seat allotment
 // @route   POST /api/students/accept
